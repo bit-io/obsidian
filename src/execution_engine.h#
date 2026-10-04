@@ -1,5 +1,8 @@
 mod ffi
 mod conv
+mod types
+mod function
+mod module
 
 struct ExecutionEngine is
     pub handle: int
@@ -28,29 +31,29 @@ impl ExecutionEngine is
     ;; `obsidian::last_error()`) — zwykle brak `link_in_mcjit()`/
     ;; `Target::init_native()` wcześniej, albo moduł nie przeszedł
     ;; weryfikacji.
-    fn create_for_module(m: Module) -> ExecutionEngine? is
+    fn create_for_module(m: module::Module) -> execution_engine::ExecutionEngine? is
         let h: int = obsidian_create_execution_engine_for_module(m.handle)
         if h == 0 is return nil end
-        return ExecutionEngine { handle: h }
+        return execution_engine::ExecutionEngine { handle: h }
     end
 
-    fn create_jit_compiler(m: Module, opt_level: i32) -> ExecutionEngine? is
+    fn create_jit_compiler(m: module::Module, opt_level: i32) -> execution_engine::ExecutionEngine? is
         let h: int = obsidian_create_jit_compiler_for_module(m.handle, opt_level)
         if h == 0 is return nil end
-        return ExecutionEngine { handle: h }
+        return execution_engine::ExecutionEngine { handle: h }
     end
 
-    fn create_interpreter(m: Module) -> ExecutionEngine? is
+    fn create_interpreter(m: module::Module) -> execution_engine::ExecutionEngine? is
         let h: int = obsidian_create_interpreter_for_module(m.handle)
         if h == 0 is return nil end
-        return ExecutionEngine { handle: h }
+        return execution_engine::ExecutionEngine { handle: h }
     end
 
     fn dispose(self) is
         LLVMDisposeExecutionEngine(self.handle)
     end
 
-    fn add_module(self, m: Module) is
+    fn add_module(self, m: module::Module) is
         LLVMAddModule(self.handle, m.handle)
     end
 
@@ -67,27 +70,27 @@ impl ExecutionEngine is
     ;; sam wiedzieć, jak go odczytać (`to_int`/`to_float`/`to_pointer`)
     ;; zgodnie z typem zwrotnym `fn_val`. Nie woł na funkcji zwracającej
     ;; `void`.
-    fn run_function(self, fn_val: FunctionValue, args: [GenericValue]) -> GenericValue is
+    fn run_function(self, fn_val: function::FunctionValue, args: [execution_engine::GenericValue]) -> execution_engine::GenericValue is
         let mut handles: [int] = []
         let mut i: int = 0
         while i < args.len() is
-            let arg: GenericValue = args[i]
+            let arg: execution_engine::GenericValue = args[i]
             handles.push(arg.handle)
             i = i + 1
         end
-        return GenericValue { handle: obsidian_run_function(self.handle, fn_val.handle, handles) }
+        return execution_engine::GenericValue { handle: obsidian_run_function(self.handle, fn_val.handle, handles) }
     end
 end
 
 impl GenericValue is
-    fn of_int(ty: Type, val: int, is_signed: bool) -> GenericValue is
-        return GenericValue { handle: LLVMCreateGenericValueOfInt(ty.handle, val, if is_signed then 1 else 0) }
+    fn of_int(ty: types::Type, val: int, is_signed: bool) -> execution_engine::GenericValue is
+        return execution_engine::GenericValue { handle: LLVMCreateGenericValueOfInt(ty.handle, val, if is_signed then 1 else 0) }
     end
-    fn of_float(ty: Type, val: f64) -> GenericValue is
-        return GenericValue { handle: LLVMCreateGenericValueOfFloat(ty.handle, val) }
+    fn of_float(ty: types::Type, val: f64) -> execution_engine::GenericValue is
+        return execution_engine::GenericValue { handle: LLVMCreateGenericValueOfFloat(ty.handle, val) }
     end
-    fn of_pointer(addr: int) -> GenericValue is
-        return GenericValue { handle: LLVMCreateGenericValueOfPointer(addr) }
+    fn of_pointer(addr: int) -> execution_engine::GenericValue is
+        return execution_engine::GenericValue { handle: LLVMCreateGenericValueOfPointer(addr) }
     end
 
     fn to_int_signed(self) -> int is
@@ -96,7 +99,7 @@ impl GenericValue is
     fn to_int_unsigned(self) -> int is
         return LLVMGenericValueToInt(self.handle, 0)
     end
-    fn to_float(self, ty: Type) -> f64 is
+    fn to_float(self, ty: types::Type) -> f64 is
         return LLVMGenericValueToFloat(ty.handle, self.handle)
     end
     fn to_pointer(self) -> int is
