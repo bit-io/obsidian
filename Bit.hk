@@ -1,16 +1,44 @@
 [package]
 -> name        => obsidian
--> version     => 0.1.0
--> description => LLVM wrapper dla H# (odpowiednik inkwell) — build LLVM21
--> author      => Bytes Developers
+-> version     => 0.1.1
+-> description => LLVM wrapper for H#
+-> authors     => ["Bit Developers"]
 -> license     => MIT
+-> lang        => h#
+
+[layout]
+-> src       => src
+-> lib-entry => src/lib.h#
 
 [build]
--> lang    => h#
--> entry   => src/lib.h#
--> output  => build/obsidian
--> emit    => lib
+-> link => static
+-> native          => make -C native
+-> native-lib-path => native
+-> native-skip-if  => native/libobsidian_shim.a
 
-[deps]
--> LLVM-21 => dynamic
--> obsidian_shim => static
+[lib]
+-> output => a
+
+[default-build]
+-> profile => release
+-> emit    => a
+
+[commands]
+-> native
+--> run => make -C native
+--> description => Build only the C shim (native/libobsidian_shim.a)
+-> check-lib
+--> run => LIBRARY_PATH="$PWD/native:/usr/lib/llvm-21/lib" h# compile src/lib.h# -o build/obsidian_check
+--> description => Compile src/lib.h# on its own (catches mod / naming errors)
+-> example-hello
+--> run => mkdir -p build && LIBRARY_PATH="$PWD/native:/usr/lib/llvm-21/lib" && export LIBRARY_PATH && cd src && h# compile ../examples/hello_sum.h# -o ../build/hello_sum && ../build/hello_sum
+--> description => Build and run examples/hello_sum.h#
+-> example-object
+--> run => mkdir -p build && LIBRARY_PATH="$PWD/native:/usr/lib/llvm-21/lib" && export LIBRARY_PATH && cd src && h# compile ../examples/emit_object.h# -o ../build/emit_object && ../build/emit_object
+--> description => Build and run examples/emit_object.h# (writes answer.o)
+-> test
+--> run => mkdir -p build && LIBRARY_PATH="$PWD/native:/usr/lib/llvm-21/lib" && export LIBRARY_PATH && cd src && h# compile ../tests/smoke_test.h# -o ../build/smoke_test && ../build/smoke_test && h# compile ../tests/conv_test.h# -o ../build/conv_test && ../build/conv_test
+--> description => Smoke test + conv regression test (expects "WSZYSTKO OK")
+-> clean
+--> run => rm -rf build cache native/*.o native/libobsidian_shim.a
+--> description => Remove build output and the compiled shim
