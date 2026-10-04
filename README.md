@@ -12,15 +12,15 @@ mod types
 mod builder
 
 fn main() is
-    let ctx: Context = Context::create()
-    let m: Module     = ctx.create_module("hello")
+    let ctx: context::Context = context::Context::create()
+    let m: module::Module     = ctx.create_module("hello")
 
-    let i32_ty: Type = ctx.i32_type()
-    let fn_ty:  Type = i32_ty.fn_type([i32_ty, i32_ty], false)
-    let sum_fn: FunctionValue = m.add_function("sum", fn_ty)
+    let i32_ty: types::Type = ctx.i32_type()
+    let fn_ty:  types::Type = i32_ty.fn_type([i32_ty, i32_ty], false)
+    let sum_fn: function::FunctionValue = m.add_function("sum", fn_ty)
 
-    let entry: BasicBlock = sum_fn.append_basic_block(ctx, "entry")
-    let b: Builder = ctx.create_builder()
+    let entry: basic_block::BasicBlock = sum_fn.append_basic_block(ctx, "entry")
+    let b: builder::Builder = ctx.create_builder()
     b.position_at_end(entry)
     b.build_ret(b.build_add(sum_fn.get_param(0), sum_fn.get_param(1), "result"))
     b.dispose()
@@ -29,6 +29,33 @@ fn main() is
     ctx.dispose()
 end
 ```
+
+## Konwencja nazw: ZAWSZE `modul::Nazwa` (ważne)
+
+Kompilator H# **mangluje** nazwy z plików dołączonych przez `mod`:
+funkcja `types_to_handles` z `conv.h#` staje się `conv_types_to_handles`,
+a struktura `Type` z `types.h#` staje się `types_Type`. Przepisywane są
+tylko odwołania *wewnątrz tego samego pliku* — odwołanie z innego pliku
+musi być zapisane z kwalifikatorem modułu, inaczej kończy się to błędem
+`codegen: undefined fn: types_to_handles` albo ostrzeżeniem
+`cannot statically determine the struct type of .handle`.
+
+Dlatego w całej bibliotece **i w Twoim kodzie** piszemy:
+
+| Zamiast | Pisz |
+|---|---|
+| `Context::create()` | `context::Context::create()` |
+| `let m: Module` | `let m: module::Module` |
+| `Type`, `Value`, `BasicBlock` | `types::Type`, `values::Value`, `basic_block::BasicBlock` |
+| `FunctionValue` | `function::FunctionValue` |
+| `Builder` | `builder::Builder` |
+| `Target`/`TargetMachine`/`TargetData` | `target_machine::Target` / `TargetMachine` / `TargetData` |
+| `ExecutionEngine`/`GenericValue` | `execution_engine::ExecutionEngine` / `GenericValue` |
+| `PassOptions` | `pass_manager::PassOptions` |
+| `run_passes(...)` / `optimize(...)` | `pass_manager::run_passes(...)` / `pass_manager::optimize(...)` |
+
+Metody (`ctx.i32_type()`, `b.build_add(...)`) i stałe z `predicates.h#`
+(`INT_EQ`, `LINKAGE_INTERNAL`, ...) działają jak dotąd, bez kwalifikatora.
 
 ## Wersjonowanie: jedno API, wiele LLVM-ów
 
@@ -83,21 +110,23 @@ cd ..
 #    indziej (macOS+Homebrew: /opt/homebrew/opt/llvm@21/lib).
 export LIBRARY_PATH="$PWD/native:/usr/lib/llvm-21/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
 
-# 3) Sama biblioteka (jako .a, patrz Bytes.hk: [build] -> emit => lib)
-bytes build
+# 3) Sama biblioteka (jako .a — patrz Bit.hk: [lib] -> output => a)
+bit build
 ```
 
 **Jak to działa naprawdę:** `libLLVM-21.so` i `libobsidian_shim.a` NIE są
-linkowane przez żaden klucz w `Bytes.hk` — biorą się WYŁĄCZNIE z bloków
+linkowane przez żaden klucz w `Bit.hk` — biorą się WYŁĄCZNIE z bloków
 `extern dynamic [c, "LLVM-21"]` / `extern static [c, "obsidian_shim"]` w
 kodzie źródłowym (`src/ffi/*.h#`). Kompilator sam dodaje `-lLLVM-21` /
 `-lobsidian_shim` do wywołania linkera na podstawie tych bloków (patrz
 `compiler/src/ffi_linker.rs`) — Twoja jedyna rola to sprawić, żeby `cc`
 w ogóle znalazł te pliki `.so`/`.a` na dysku, stąd `LIBRARY_PATH` powyżej.
-`Bytes.hk`'s `[deps]` (`LLVM-21 => dynamic`, `obsidian_shim => static`)
-to czysta dokumentacja dla `bytes info`/człowieka — `bytes` traktuje takie
-wpisy jako "biblioteka systemowa, nic nie pobieraj" i **nie** przekłada
-ich na żadną flagę kompilatora.
+`Bit.hk` (`bit` odrzuca `link => dynamic`, więc LLVM nie może tam być
+zadeklarowany jako zależność) opisuje je tylko w komentarzach; sekcja
+`[build]` mówi `bit`-owi, jak zbudować shim (`native => make -C native`)
+i gdzie go potem szukać (`native-lib-path => native`) — `bit` sam
+wyeksportuje ten katalog w `LIBRARY_PATH`. `libLLVM-21.so` musi być
+zainstalowany w systemie (`llvm-21-dev`).
 
 Jeśli po `export LIBRARY_PATH=...` linker nadal krzyczy `cannot find
 -lLLVM-21` / `cannot find -lobsidian_shim`, sprawdź dokładnie gdzie Twój
@@ -125,14 +154,14 @@ cd ..
 ./build/emit_object     # zapisuje answer.o w bieżącym katalogu
 ```
 
-### Dlaczego `bytes test` nie jest wspierane
+### Dlaczego `bit test` nie jest wspierane
 
-`bytes` wykonuje `#[test]`/`assert_*` przez swój własny, lekki JIT
+`bit test` wykonuje `#[test]`/`assert_*` przez swój własny, lekki JIT
 (Cranelift, w pamięci) do szybkiej pętli dev — nie ma w nim kroku
 "zlinkuj z `libLLVM-21.so` i `libobsidian_shim.a`". Obsidian z natury
 rzeczy wymaga prawdziwego linkera, więc `tests/smoke_test.h#` jest
 zwykłym programem z `fn main()`, kompilowanym i uruchamianym jak
-`examples/` — nie plikiem pod `bytes test`.
+`examples/` — nie plikiem pod `bit test`.
 
 ### Dlaczego `h# preview` nie zadziała
 
