@@ -1,5 +1,8 @@
 mod ffi
 mod conv
+mod types
+mod values
+mod function
 
 struct Module is
     pub handle: int
@@ -10,8 +13,8 @@ impl Module is
         LLVMDisposeModule(self.handle)
     end
 
-    fn clone(self) -> Module is
-        return Module { handle: LLVMCloneModule(self.handle) }
+    fn clone(self) -> module::Module is
+        return module::Module { handle: LLVMCloneModule(self.handle) }
     end
 
     ;; ── Metadane ─────────────────────────────────────────────────────
@@ -37,45 +40,45 @@ impl Module is
     ;; ── Funkcje ──────────────────────────────────────────────────────
     ;; `fn_type` powinien pochodzić z `SomeType.fn_type([...], false)` —
     ;; patrz src/types.h#.
-    fn add_function(self, name: string, fn_ty: Type) -> FunctionValue is
-        return FunctionValue { handle: LLVMAddFunction(self.handle, name, fn_ty.handle) }
+    fn add_function(self, name: string, fn_ty: types::Type) -> function::FunctionValue is
+        return function::FunctionValue { handle: LLVMAddFunction(self.handle, name, fn_ty.handle) }
     end
 
     ;; Zwraca `nil` jeśli funkcja o tej nazwie nie istnieje w module —
     ;; odpowiednik `inkwell::Module::get_function`.
-    fn get_function(self, name: string) -> FunctionValue? is
+    fn get_function(self, name: string) -> function::FunctionValue? is
         let h: int = LLVMGetNamedFunction(self.handle, name)
         if h == 0 is return nil end
-        return FunctionValue { handle: h }
+        return function::FunctionValue { handle: h }
     end
 
-    fn first_function(self) -> FunctionValue? is
+    fn first_function(self) -> function::FunctionValue? is
         let h: int = LLVMGetFirstFunction(self.handle)
         if h == 0 is return nil end
-        return FunctionValue { handle: h }
+        return function::FunctionValue { handle: h }
     end
 
     ;; Wszystkie funkcje modułu (deklaracje i definicje) w kolejności
     ;; dodania — przydatne do np. "przejdź po wszystkich funkcjach i
     ;; zweryfikuj każdą z osobna".
-    fn functions(self) -> [FunctionValue] is
-        let mut out: [FunctionValue] = []
+    fn functions(self) -> [function::FunctionValue] is
+        let mut out: [function::FunctionValue] = []
         let mut cur: int = LLVMGetFirstFunction(self.handle)
         while cur != 0 is
-            out.push(FunctionValue { handle: cur })
+            out.push(function::FunctionValue { handle: cur })
             cur = LLVMGetNextFunction(cur)
         end
         return out
     end
 
     ;; ── Globalne zmienne ─────────────────────────────────────────────
-    fn add_global(self, ty: Type, name: string) -> Value is
-        return Value { handle: LLVMAddGlobal(self.handle, ty.handle, name) }
+    fn add_global(self, ty: types::Type, name: string) -> values::Value is
+        return values::Value { handle: LLVMAddGlobal(self.handle, ty.handle, name) }
     end
-    fn get_global(self, name: string) -> Value? is
+    fn get_global(self, name: string) -> values::Value? is
         let h: int = LLVMGetNamedGlobal(self.handle, name)
         if h == 0 is return nil end
-        return Value { handle: h }
+        return values::Value { handle: h }
     end
 
     ;; ── Wyjście ──────────────────────────────────────────────────────
