@@ -1,13 +1,15 @@
 mod ffi
 mod conv
+mod types
+mod function
 
 struct Value is
     pub handle: int
 end
 
 impl Value is
-    fn get_type(self) -> Type is
-        return Type { handle: LLVMTypeOf(self.handle) }
+    fn get_type(self) -> types::Type is
+        return types::Type { handle: LLVMTypeOf(self.handle) }
     end
 
     fn set_name(self, name: string) is
@@ -53,11 +55,11 @@ impl Value is
     end
 
     ;; ── Globalne zmienne (gdy `self` pochodzi z Module::add_global) ────
-    fn set_initializer(self, val: Value) is
+    fn set_initializer(self, val: values::Value) is
         LLVMSetInitializer(self.handle, val.handle)
     end
-    fn get_initializer(self) -> Value is
-        return Value { handle: LLVMGetInitializer(self.handle) }
+    fn get_initializer(self) -> values::Value is
+        return values::Value { handle: LLVMGetInitializer(self.handle) }
     end
     fn set_global_constant(self, is_constant: bool) is
         LLVMSetGlobalConstant(self.handle, if is_constant then 1 else 0)
@@ -77,16 +79,16 @@ impl Value is
         LLVMSetVolatile(self.handle, if is_volatile then 1 else 0)
     end
 
-    fn eq(self, other: Value) -> bool is
+    fn eq(self, other: values::Value) -> bool is
         return self.handle == other.handle
     end
 
     ;; Rzutowanie w dół: `nil` jeśli `self` nie jest funkcją/instrukcją/
     ;; argumentem/blokiem — odpowiednik `inkwell`'s `TryFrom`/`as_*_value`.
-    fn as_function(self) -> FunctionValue? is
+    fn as_function(self) -> function::FunctionValue? is
         let h: int = LLVMIsAFunction(self.handle)
         if h == 0 is return nil end
-        return FunctionValue { handle: self.handle }
+        return function::FunctionValue { handle: self.handle }
     end
     fn is_instruction(self) -> bool is
         return LLVMIsAInstruction(self.handle) != 0
