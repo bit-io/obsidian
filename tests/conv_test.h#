@@ -1,0 +1,60 @@
+mod context
+mod types
+mod values
+mod basic_block
+mod conv
+
+fn check(name: string, cond: bool) -> bool is
+    if cond is
+        write("  ok    " + name)
+    else
+        write("  FAIL  " + name)
+    end
+    return cond
+end
+
+fn main() is
+    let mut failures: int = 0
+    let ctx: context::Context = context::Context::create()
+    let i32_ty: types::Type = ctx.i32_type()
+    let i64_ty: types::Type = ctx.i64_type()
+
+    ;; [Type] -> [int] -> [Type]
+    let tys: [types::Type] = [i32_ty, i64_ty]
+    let hs: [int] = conv::types_to_handles(tys)
+    if !check("types_to_handles: długość", hs.len() == 2) is failures = failures + 1 end
+    if !check("types_to_handles: uchwyt 0", hs[0] == i32_ty.handle) is failures = failures + 1 end
+    if !check("types_to_handles: uchwyt 1", hs[1] == i64_ty.handle) is failures = failures + 1 end
+
+    let back: [types::Type] = conv::handles_to_types(hs)
+    if !check("handles_to_types: długość", back.len() == 2) is failures = failures + 1 end
+    if !check("handles_to_types: round-trip", back[1].eq(i64_ty)) is failures = failures + 1 end
+
+    ;; [Value] -> [int] -> [Value]
+    let c1: values::Value = ctx.const_int(i32_ty, 7, true)
+    let c2: values::Value = ctx.const_int(i32_ty, 9, true)
+    let vs: [values::Value] = [c1, c2]
+    let vh: [int] = conv::values_to_handles(vs)
+    if !check("values_to_handles: długość", vh.len() == 2) is failures = failures + 1 end
+    let vback: [values::Value] = conv::handles_to_values(vh)
+    if !check("handles_to_values: round-trip", vback[0].eq(c1)) is failures = failures + 1 end
+    if !check("handles_to_values: wartość", vback[1].const_int_signed() == 9) is failures = failures + 1 end
+
+    ;; Puste tablice
+    let empty_types: [types::Type] = []
+    if !check("types_to_handles: pusta tablica", conv::types_to_handles(empty_types).len() == 0) is failures = failures + 1 end
+
+    ;; Wywołanie przez metody (wewnętrznie używają conv::*)
+    let fn_ty: types::Type = i32_ty.fn_type([i32_ty, i64_ty], false)
+    if !check("fn_type: param_count == 2", fn_ty.param_count() == 2) is failures = failures + 1 end
+    let ps: [types::Type] = fn_ty.param_types()
+    if !check("param_types: elementy", ps.len() == 2 && ps[0].eq(i32_ty) && ps[1].eq(i64_ty)) is failures = failures + 1 end
+
+    write("")
+    if failures == 0 is
+        write("=== WSZYSTKO OK ===")
+    else
+        write("=== " + to_string(failures) + " BŁĘDÓW ===")
+    end
+    ctx.dispose()
+end
