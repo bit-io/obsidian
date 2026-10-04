@@ -1,12 +1,14 @@
 mod ffi
+mod values
+mod function
 
 struct BasicBlock is
     pub handle: int
 end
 
 impl BasicBlock is
-    fn parent(self) -> FunctionValue is
-        return FunctionValue { handle: LLVMGetBasicBlockParent(self.handle) }
+    fn parent(self) -> function::FunctionValue is
+        return function::FunctionValue { handle: LLVMGetBasicBlockParent(self.handle) }
     end
 
     fn get_name(self) -> string is
@@ -16,19 +18,19 @@ impl BasicBlock is
     ;; Ostatnia instrukcja bloku, jeśli to terminator (`ret`/`br`/`switch`/
     ;; `unreachable`/...) — `nil` jeśli blok jest jeszcze "otwarty"
     ;; (częsty stan podczas budowania IR krok po kroku).
-    fn terminator(self) -> Value? is
+    fn terminator(self) -> values::Value? is
         let h: int = LLVMGetBasicBlockTerminator(self.handle)
         if h == 0 is return nil end
-        return Value { handle: h }
+        return values::Value { handle: h }
     end
 
-    fn next(self) -> BasicBlock? is
+    fn next(self) -> basic_block::BasicBlock? is
         let h: int = LLVMGetNextBasicBlock(self.handle)
         if h == 0 is return nil end
-        return BasicBlock { handle: h }
+        return basic_block::BasicBlock { handle: h }
     end
 
-    fn move_after(self, other: BasicBlock) is
+    fn move_after(self, other: basic_block::BasicBlock) is
         LLVMMoveBasicBlockAfter(self.handle, other.handle)
     end
 
@@ -44,11 +46,11 @@ impl BasicBlock is
 
     ;; Reprezentacja bloku jako `Value` — potrzebne np. do
     ;; `Builder::build_indirect_br`/`blockaddress`.
-    fn as_value(self) -> Value is
-        return Value { handle: LLVMBasicBlockAsValue(self.handle) }
+    fn as_value(self) -> values::Value is
+        return values::Value { handle: LLVMBasicBlockAsValue(self.handle) }
     end
 
-    fn eq(self, other: BasicBlock) -> bool is
+    fn eq(self, other: basic_block::BasicBlock) -> bool is
         return self.handle == other.handle
     end
 end
