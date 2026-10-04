@@ -28,3 +28,4 @@ extern dynamic [c, "LLVM-21"] is
     fn LLVMDisposeErrorMessage(msg: string)
     fn LLVMConsumeError(err: int)
 end
+
