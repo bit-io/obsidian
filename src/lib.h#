@@ -13,7 +13,7 @@ mod target_machine ;; Target / TargetMachine / TargetData
 mod execution_engine ;; ExecutionEngine (MCJIT/interpreter) / GenericValue
 mod pass_manager ;; PassOptions + run_passes/optimize
 
-pub const VERSION: string = "0.1.0"
+pub const VERSION: string = "0.1.1"
 ;; Wersja LLVM, pod którą zbudowana jest TA wersja Obsidian — kolejne
 ;; wersje LLVM dostają kolejne wersje Obsidian (0.2.x -> LLVM 22, ...),
 ;; zawsze z identycznym API wysokopoziomowym (Context/Module/Builder/...).
