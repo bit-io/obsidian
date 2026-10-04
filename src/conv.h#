@@ -1,53 +1,56 @@
-pub fn types_to_handles(items: [Type]) -> [int] is
+mod types
+mod values
+mod basic_block
+pub fn types_to_handles(items: [types::Type]) -> [int] is
     let mut out: [int] = []
     let mut i: int = 0
     while i < items.len() is
-        let item: Type = items[i]
+        let item: types::Type = items[i]
         out.push(item.handle)
         i = i + 1
     end
     return out
 end
 
-pub fn values_to_handles(items: [Value]) -> [int] is
+pub fn values_to_handles(items: [values::Value]) -> [int] is
     let mut out: [int] = []
     let mut i: int = 0
     while i < items.len() is
-        let item: Value = items[i]
+        let item: values::Value = items[i]
         out.push(item.handle)
         i = i + 1
     end
     return out
 end
 
-pub fn blocks_to_handles(items: [BasicBlock]) -> [int] is
+pub fn blocks_to_handles(items: [basic_block::BasicBlock]) -> [int] is
     let mut out: [int] = []
     let mut i: int = 0
     while i < items.len() is
-        let item: BasicBlock = items[i]
+        let item: basic_block::BasicBlock = items[i]
         out.push(item.handle)
         i = i + 1
     end
     return out
 end
 
-pub fn handles_to_types(items: [int]) -> [Type] is
-    let mut out: [Type] = []
+pub fn handles_to_types(items: [int]) -> [types::Type] is
+    let mut out: [types::Type] = []
     let mut i: int = 0
     while i < items.len() is
         let h: int = items[i]
-        out.push(Type { handle: h })
+        out.push(types::Type { handle: h })
         i = i + 1
     end
     return out
 end
 
-pub fn handles_to_values(items: [int]) -> [Value] is
-    let mut out: [Value] = []
+pub fn handles_to_values(items: [int]) -> [values::Value] is
+    let mut out: [values::Value] = []
     let mut i: int = 0
     while i < items.len() is
         let h: int = items[i]
-        out.push(Value { handle: h })
+        out.push(values::Value { handle: h })
         i = i + 1
     end
     return out
