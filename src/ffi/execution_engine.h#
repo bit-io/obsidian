@@ -1,4 +1,4 @@
-extern dynamic [c, "LLVM-21"] is
+extern static [c, "LLVM-21"] is
     ;; MCJIT musi być "wlinkowany" (LLVM domyślnie nie linkuje JIT-a, żeby
     ;; programy niekorzystające z JIT-a nie ciągnęły go za sobą) — wołane
     ;; raz przez ExecutionEngine::link_in_mcjit().
