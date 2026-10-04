@@ -1,5 +1,9 @@
 mod ffi
 mod conv
+mod types
+mod values
+mod basic_block
+mod context
 
 struct FunctionValue is
     pub handle: int
@@ -9,12 +13,12 @@ impl FunctionValue is
     ;; Rzutowanie w górę do ogólnego `Value` (np. żeby przekazać funkcję
     ;; jako argument callback-a albo zapisać do zmiennej `[int]` z
     ;; conv::values_to_handles).
-    fn as_value(self) -> Value is
-        return Value { handle: self.handle }
+    fn as_value(self) -> values::Value is
+        return values::Value { handle: self.handle }
     end
 
-    fn get_type(self) -> Type is
-        return Type { handle: LLVMTypeOf(self.handle) }
+    fn get_type(self) -> types::Type is
+        return types::Type { handle: LLVMTypeOf(self.handle) }
     end
 
     fn get_name(self) -> string is
@@ -42,41 +46,41 @@ impl FunctionValue is
     fn param_count(self) -> int is
         return LLVMCountParams(self.handle)
     end
-    fn get_param(self, idx: int) -> Value is
-        return Value { handle: LLVMGetParam(self.handle, idx) }
+    fn get_param(self, idx: int) -> values::Value is
+        return values::Value { handle: LLVMGetParam(self.handle, idx) }
     end
     ;; Wszystkie parametry naraz, w kolejności deklaracji.
-    fn params(self) -> [Value] is
-        return handles_to_values(obsidian_get_params(self.handle))
+    fn params(self) -> [values::Value] is
+        return conv::handles_to_values(obsidian_get_params(self.handle))
     end
 
     ;; ── Podstawowe bloki ─────────────────────────────────────────────
-    fn append_basic_block(self, ctx: Context, name: string) -> BasicBlock is
-        return BasicBlock { handle: LLVMAppendBasicBlockInContext(ctx.handle, self.handle, name) }
+    fn append_basic_block(self, ctx: context::Context, name: string) -> basic_block::BasicBlock is
+        return basic_block::BasicBlock { handle: LLVMAppendBasicBlockInContext(ctx.handle, self.handle, name) }
     end
-    fn insert_basic_block_before(self, ctx: Context, before: BasicBlock, name: string) -> BasicBlock is
-        return BasicBlock { handle: LLVMInsertBasicBlockInContext(ctx.handle, before.handle, name) }
+    fn insert_basic_block_before(self, ctx: context::Context, before: basic_block::BasicBlock, name: string) -> basic_block::BasicBlock is
+        return basic_block::BasicBlock { handle: LLVMInsertBasicBlockInContext(ctx.handle, before.handle, name) }
     end
-    fn entry_block(self) -> BasicBlock? is
+    fn entry_block(self) -> basic_block::BasicBlock? is
         let h: int = LLVMGetEntryBasicBlock(self.handle)
         if h == 0 is return nil end
-        return BasicBlock { handle: h }
+        return basic_block::BasicBlock { handle: h }
     end
-    fn first_block(self) -> BasicBlock? is
+    fn first_block(self) -> basic_block::BasicBlock? is
         let h: int = LLVMGetFirstBasicBlock(self.handle)
         if h == 0 is return nil end
-        return BasicBlock { handle: h }
+        return basic_block::BasicBlock { handle: h }
     end
     fn basic_block_count(self) -> int is
         return LLVMCountBasicBlocks(self.handle)
     end
     ;; Wszystkie bloki w kolejności — przydatne do pełnego przejścia po
     ;; ciele funkcji (np. własny analizator/optymalizacja na poziomie H#).
-    fn basic_blocks(self) -> [BasicBlock] is
-        let mut out: [BasicBlock] = []
+    fn basic_blocks(self) -> [basic_block::BasicBlock] is
+        let mut out: [basic_block::BasicBlock] = []
         let mut cur: int = LLVMGetFirstBasicBlock(self.handle)
         while cur != 0 is
-            out.push(BasicBlock { handle: cur })
+            out.push(basic_block::BasicBlock { handle: cur })
             cur = LLVMGetNextBasicBlock(cur)
         end
         return out
@@ -95,7 +99,7 @@ impl FunctionValue is
         return msg
     end
 
-    fn eq(self, other: FunctionValue) -> bool is
+    fn eq(self, other: function::FunctionValue) -> bool is
         return self.handle == other.handle
     end
 end
