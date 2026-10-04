@@ -1,4 +1,6 @@
 mod ffi
+mod types
+mod module
 
 struct Target is
     pub handle: int
@@ -45,21 +47,21 @@ impl Target is
 
     ;; Zwraca `nil` jeśli triplet jest nierozpoznany / backend niedostępny
     ;; w tym builddzie LLVM-a (patrz `obsidian::last_error()`).
-    fn from_triple(triple: string) -> Target? is
+    fn from_triple(triple: string) -> target_machine::Target? is
         let h: int = obsidian_get_target_from_triple(triple)
         if h == 0 is return nil end
-        return Target { handle: h }
+        return target_machine::Target { handle: h }
     end
 
-    fn first() -> Target? is
+    fn first() -> target_machine::Target? is
         let h: int = LLVMGetFirstTarget()
         if h == 0 is return nil end
-        return Target { handle: h }
+        return target_machine::Target { handle: h }
     end
-    fn next(self) -> Target? is
+    fn next(self) -> target_machine::Target? is
         let h: int = LLVMGetNextTarget(self.handle)
         if h == 0 is return nil end
-        return Target { handle: h }
+        return target_machine::Target { handle: h }
     end
     fn name(self) -> string is
         return LLVMGetTargetName(self.handle)
@@ -71,8 +73,8 @@ impl Target is
     ;; `cpu`/`features` mogą być `""` (LLVM dobierze rozsądne domyślne).
     ;; Dla kodu, który MA działać na tym samym CPU co kompilacja, użyj
     ;; `Target::host_cpu_name()`/`host_cpu_features()`.
-    fn create_target_machine(self, triple: string, cpu: string, features: string, opt_level: i32, reloc: i32, code_model: i32) -> TargetMachine is
-        return TargetMachine { handle: LLVMCreateTargetMachine(self.handle, triple, cpu, features, opt_level, reloc, code_model) }
+    fn create_target_machine(self, triple: string, cpu: string, features: string, opt_level: i32, reloc: i32, code_model: i32) -> target_machine::TargetMachine is
+        return target_machine::TargetMachine { handle: LLVMCreateTargetMachine(self.handle, triple, cpu, features, opt_level, reloc, code_model) }
     end
 end
 
@@ -84,30 +86,30 @@ impl TargetMachine is
     fn triple(self) -> string is
         return LLVMGetTargetMachineTriple(self.handle)
     end
-    fn target(self) -> Target is
-        return Target { handle: LLVMGetTargetMachineTarget(self.handle) }
+    fn target(self) -> target_machine::Target is
+        return target_machine::Target { handle: LLVMGetTargetMachineTarget(self.handle) }
     end
     fn set_asm_verbosity(self, verbose: bool) is
         LLVMSetTargetMachineAsmVerbosity(self.handle, if verbose then 1 else 0)
     end
 
-    fn create_target_data(self) -> TargetData is
-        return TargetData { handle: LLVMCreateTargetDataLayout(self.handle) }
+    fn create_target_data(self) -> target_machine::TargetData is
+        return target_machine::TargetData { handle: LLVMCreateTargetDataLayout(self.handle) }
     end
 
     ;; Ustawia `module.data_layout` na layout tej maszyny — rób to ZAWSZE
     ;; przed emitowaniem obiektu, żeby rozmiary/wyrównania w wygenerowanym
     ;; kodzie zgadzały się z docelową platformą (`inkwell` robi to samo w
     ;; `TargetMachine::write_to_file`, tu jest to jawny, osobny krok).
-    fn set_module_data_layout(self, m: Module) is
-        let td: TargetData = self.create_target_data()
+    fn set_module_data_layout(self, m: module::Module) is
+        let td: target_machine::TargetData = self.create_target_data()
         LLVMSetModuleDataLayout(m.handle, td.handle)
     end
 
     ;; Zwraca `""` przy sukcesie, w przeciwnym razie komunikat błędu.
     ;; `file_type`: `FILE_TYPE_OBJECT` (.o, do zlinkowania) albo
     ;; `FILE_TYPE_ASSEMBLY` (.s, czytelny tekst) — stałe z predicates.h#.
-    fn emit_to_file(self, m: Module, filename: string, file_type: i32) -> string is
+    fn emit_to_file(self, m: module::Module, filename: string, file_type: i32) -> string is
         if obsidian_target_machine_emit_to_file(self.handle, m.handle, filename, file_type) == 0 is
             return ""
         end
@@ -122,10 +124,10 @@ impl TargetData is
     fn to_string_rep(self) -> string is
         return LLVMCopyStringRepOfTargetData(self.handle)
     end
-    fn abi_size_of(self, ty: Type) -> int is
+    fn abi_size_of(self, ty: types::Type) -> int is
         return LLVMABISizeOfType(self.handle, ty.handle)
     end
-    fn abi_alignment_of(self, ty: Type) -> int is
+    fn abi_alignment_of(self, ty: types::Type) -> int is
         return LLVMABIAlignmentOfType(self.handle, ty.handle)
     end
     fn pointer_size(self) -> int is
