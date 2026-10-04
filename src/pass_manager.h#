@@ -1,12 +1,14 @@
 mod ffi
+mod module
+mod target_machine
 
 struct PassOptions is
     pub handle: int
 end
 
 impl PassOptions is
-    fn create() -> PassOptions is
-        return PassOptions { handle: LLVMCreatePassBuilderOptions() }
+    fn create() -> pass_manager::PassOptions is
+        return pass_manager::PassOptions { handle: LLVMCreatePassBuilderOptions() }
     end
     fn dispose(self) is
         LLVMDisposePassBuilderOptions(self.handle)
@@ -41,7 +43,7 @@ end
 ;;   "instcombine,mem2reg,dce"  — ręcznie dobrany łańcuch przebiegów
 ;;
 ;; Zwraca `""` przy sukcesie, w przeciwnym razie komunikat błędu.
-pub fn run_passes(m: Module, passes: string, tm: TargetMachine, opts: PassOptions) -> string is
+pub fn run_passes(m: module::Module, passes: string, tm: target_machine::TargetMachine, opts: pass_manager::PassOptions) -> string is
     let err: int = LLVMRunPasses(m.handle, passes, tm.handle, opts.handle)
     if err == 0 is return "" end
     let msg: string = LLVMGetErrorMessage(err)
@@ -54,8 +56,8 @@ end
 
 ;; Wygodny skrót: `run_passes(m, "default<O" + level_as_string + ">", tm, ...)`
 ;; z domyślnymi opcjami (bez weryfikacji/debug loggingu po każdym przebiegu).
-pub fn optimize(m: Module, tm: TargetMachine, level: int) -> string is
-    let opts: PassOptions = PassOptions::create()
+pub fn optimize(m: module::Module, tm: target_machine::TargetMachine, level: int) -> string is
+    let opts: pass_manager::PassOptions = pass_manager::PassOptions::create()
     let pipeline: string = "default<O" + to_string(level) + ">"
     let result: string = run_passes(m, pipeline, tm, opts)
     opts.dispose()
