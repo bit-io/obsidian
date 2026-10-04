@@ -7,15 +7,15 @@ mod target_machine
 mod predicates
 
 fn main() is
-    let ctx: Context = Context::create()
-    let m: Module = ctx.create_module("emit_object_demo")
+    let ctx: context::Context = context::Context::create()
+    let m: module::Module = ctx.create_module("emit_object_demo")
 
-    let i32_ty: Type = ctx.i32_type()
-    let fn_ty: Type = i32_ty.fn_type([], false)
-    let answer_fn: FunctionValue = m.add_function("answer", fn_ty)
+    let i32_ty: types::Type = ctx.i32_type()
+    let fn_ty: types::Type = i32_ty.fn_type([], false)
+    let answer_fn: function::FunctionValue = m.add_function("answer", fn_ty)
 
-    let entry: BasicBlock = answer_fn.append_basic_block(ctx, "entry")
-    let b: Builder = ctx.create_builder()
+    let entry: basic_block::BasicBlock = answer_fn.append_basic_block(ctx, "entry")
+    let b: builder::Builder = ctx.create_builder()
     b.position_at_end(entry)
     b.build_ret(ctx.const_int(i32_ty, 42, false))
     b.dispose()
@@ -25,22 +25,22 @@ fn main() is
         return
     end
 
-    if !Target::init_native() is
+    if !target_machine::Target::init_native() is
         write("Nie udało się zainicjalizować backendu natywnego: " + obsidian_last_error())
         return
     end
 
-    let triple: string = Target::default_triple()
-    let target = Target::from_triple(triple)
+    let triple: string = target_machine::Target::default_triple()
+    let target = target_machine::Target::from_triple(triple)
     if target == nil is
         write("Nieznany triplet '" + triple + "': " + obsidian_last_error())
         return
     end
 
-    let tm: TargetMachine = target.create_target_machine(
+    let tm: target_machine::TargetMachine = target.create_target_machine(
         triple,
-        Target::host_cpu_name(),
-        Target::host_cpu_features(),
+        target_machine::Target::host_cpu_name(),
+        target_machine::Target::host_cpu_features(),
         OPT_DEFAULT,
         RELOC_PIC,
         CODE_MODEL_DEFAULT
