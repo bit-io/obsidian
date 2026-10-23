@@ -6,6 +6,7 @@ extern static [c, "LLVM-21"] is
     fn LLVMPassBuilderOptionsSetLoopVectorization(opts: int, enable: i32)
     fn LLVMPassBuilderOptionsSetSLPVectorization(opts: int, enable: i32)
     fn LLVMPassBuilderOptionsSetMergeFunctions(opts: int, enable: i32)
+    fn LLVMPassBuilderOptionsSetLoopInterleaving(opts: int, enable: i32)
     fn LLVMDisposePassBuilderOptions(opts: int)
     ;; Zwraca LLVMErrorRef (0 = sukces). `passes` to tekstowy "pipeline",
     ;; np. "default<O2>", "default<O0>", "instcombine,mem2reg".
