@@ -21,6 +21,12 @@ impl FunctionValue is
         return types::Type { handle: LLVMTypeOf(self.handle) }
     end
 
+    ;; Typ FUNKCJI (np. `i32 (i32, ptr)`) - odpowiednik `inkwell::FunctionValue::get_type()`. NIE mylic z `get_type()`,
+    ;; ktore (LLVMTypeOf) zwraca `ptr`: `param_types()`/`build_call` na nim to UB (segfault).
+    fn function_type(self) -> types::Type is
+        return types::Type { handle: LLVMGlobalGetValueType(self.handle) }
+    end
+
     fn get_name(self) -> string is
         return LLVMGetValueName2(self.handle)
     end
@@ -40,6 +46,26 @@ impl FunctionValue is
     end
     fn set_linkage(self, linkage: i32) is
         LLVMSetLinkage(self.handle, linkage)
+    end
+
+    ;; Atrybut wyliczeniowy (bez wartosci) po nazwie, np. "nounwind", "nonnull", "noundef".
+    ;; `index`: ATTR_INDEX_FUNCTION (-1 jako u32 = 4294967295) dla funkcji, 0 = wartosc zwracana,
+    ;; 1.. = parametry (numeracja LLVM: parametr i ma indeks i+1). Zwraca `false` dla nieznanej nazwy.
+    fn add_enum_attribute(self, ctx: context::Context, name: string, index: u32) -> bool is
+        let kind: u32 = LLVMGetEnumAttributeKindForName(name, name.len())
+        if kind == 0 is return false end
+        LLVMAddAttributeAtIndex(self.handle, index, LLVMCreateEnumAttribute(ctx.handle, kind, 0))
+        return true
+    end
+    fn mark_nounwind(self, ctx: context::Context) -> bool is
+        return self.add_enum_attribute(ctx, "nounwind", 4294967295)
+    end
+    ;; Odpowiednik `llvm_optimize::mark_param_nonnull`: `noundef` + `nonnull` na parametrze `param_index` (od 0).
+    fn mark_param_nonnull(self, ctx: context::Context, param_index: int) -> bool is
+        let idx: u32 = param_index + 1
+        let a: bool = self.add_enum_attribute(ctx, "nonnull", idx)
+        let b: bool = self.add_enum_attribute(ctx, "noundef", idx)
+        return a && b
     end
 
     ;; ── Parametry ────────────────────────────────────────────────────
