@@ -5,6 +5,10 @@ extern static [c, "LLVM-21"] is
     fn LLVMLinkInMCJIT()
     fn LLVMLinkInInterpreter()
 
+    ;; Rozwiazywanie symboli zewnetrznych w JIT: biblioteka runtime (`libhsh_runtime.so`) i pojedyncze symbole.
+    fn LLVMLoadLibraryPermanently(path: string) -> i32
+    fn LLVMAddSymbol(name: string, addr: int)
+
     fn LLVMDisposeExecutionEngine(ee: int)
     fn LLVMRunStaticConstructors(ee: int)
     fn LLVMRunStaticDestructors(ee: int)
