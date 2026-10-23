@@ -19,6 +19,16 @@ impl ExecutionEngine is
     fn link_in_mcjit() is
         LLVMLinkInMCJIT()
     end
+
+    ;; Laduje biblioteke wspolna do procesu, tak ze JIT rozwiazuje jej symbole (np. `libhsh_runtime.so` z `hsh_*`).
+    ;; LLVMLoadLibraryPermanently zwraca 1 przy BLEDZIE (odwrotnie niz zwykle) - tu `true` = zaladowano.
+    fn load_library(path: string) -> bool is
+        return LLVMLoadLibraryPermanently(path) == 0
+    end
+    ;; Rejestruje pojedynczy symbol (adres w procesie) widoczny dla JIT.
+    fn add_symbol(name: string, addr: int) is
+        LLVMAddSymbol(name, addr)
+    end
     ;; Interpreter czysto programowy (bez JIT-a) — wolniejszy, ale nie
     ;; wymaga backendu maszynowego dla architektury hosta. Rzadko
     ;; potrzebny jeśli `Target::init_native()` już działa.
