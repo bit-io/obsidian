@@ -86,6 +86,11 @@ extern static [c, "LLVM-21"] is
     fn LLVMDeleteFunction(fn_val: int)
     fn LLVMGetLinkage(v: int) -> i32
     fn LLVMSetLinkage(v: int, linkage: i32)
+
+    ;; ── Atrybuty (nounwind / nonnull / noundef ...) ─────────────────────
+    fn LLVMGetEnumAttributeKindForName(name: string, len: u64) -> u32
+    fn LLVMCreateEnumAttribute(ctx: int, kind_id: u32, val: u64) -> int
+    fn LLVMAddAttributeAtIndex(fn_val: int, idx: u32, attr: int)
     fn LLVMGetVisibility(v: int) -> i32
     fn LLVMSetVisibility(v: int, vis: i32)
     fn LLVMSetFunctionCallConv(fn_val: int, cc: u32)
@@ -114,6 +119,8 @@ extern static [c, "LLVM-21"] is
     fn LLVMGetNextBasicBlock(bb: int) -> int
     fn LLVMCountBasicBlocks(fn_val: int) -> u32
     fn LLVMGetBasicBlockTerminator(bb: int) -> int
+    fn LLVMGetFirstInstruction(bb: int) -> int
+    fn LLVMGlobalGetValueType(v: int) -> int
     fn LLVMGetBasicBlockName(bb: int) -> string
     fn LLVMBasicBlockAsValue(bb: int) -> int
     fn LLVMValueAsBasicBlock(v: int) -> int
