@@ -31,6 +31,9 @@ impl PassOptions is
     fn set_merge_functions(self, enable: bool) is
         LLVMPassBuilderOptionsSetMergeFunctions(self.handle, if enable then 1 else 0)
     end
+    fn set_loop_interleaving(self, enable: bool) is
+        LLVMPassBuilderOptionsSetLoopInterleaving(self.handle, if enable then 1 else 0)
+    end
 end
 
 ;; Wolnostojąca funkcja (nie metoda Module), bo wymaga TargetMachine —
