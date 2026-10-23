@@ -7,6 +7,13 @@ struct BasicBlock is
 end
 
 impl BasicBlock is
+    ;; Pierwsza instrukcja bloku (nil gdy pusty) - potrzebne do `alloca` na poczatku `entry`.
+    fn first_instruction(self) -> values::Value? is
+        let h: int = LLVMGetFirstInstruction(self.handle)
+        if h == 0 is return nil end
+        return values::Value { handle: h }
+    end
+
     fn parent(self) -> function::FunctionValue is
         return function::FunctionValue { handle: LLVMGetBasicBlockParent(self.handle) }
     end
